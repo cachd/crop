@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Crop Demo</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/normalize/2.1.3/normalize.min.css">
+  <style>
+    .crop {
+      overflow: hidden;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 200px;
+      height: 200px;
+      margin-top: -100px;
+      border: 2px solid red;
+    }
+      .crop img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        max-width: none;
+        max-height: none;
+      }
+      .crop .controls {
+        position: absolute;
+        z-index: 1;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        line-height: 21px;
+        padding: 0 7px;
+        background: rgba(255, 255, 255, .75);
+        font-size: 10px;
+
+         -webkit-user-select: none;
+         -moz-user-select: none;
+         -ms-user-select: none;
+         -o-user-select: none;
+         user-select: none;
+      }
+        .crop .controls p {
+          margin: 0;
+        }
+        .crop .controls .zoom {
+          float: left;
+          margin-right: 5px;
+        }
+        .crop .controls a {
+          float: left;
+          margin-right: 3px;
+          cursor: pointer;
+          text-decoration: underline;
+        }
+        .crop .controls a:hover {
+          text-decoration: none;
+        }
+        .crop .controls .coords {
+          float: right;
+        }
+  </style>
+</head>
+<body>
+
+  <div id="crop1" class="crop" style="margin-left: -250px">
+    <img src="http://lorempixel.com/output/technics-q-c-640-480-4.jpg">
+    <div class="controls">
+      <p class="zoom">Zoom: </p>
+      <a data-role="zoomIn">In</a>
+      <a data-role="zoomOut">Out</a>
+      <p class="coords"></p>
+    </div>
+  </div>
+
+  <div id="crop2" class="crop" style="margin-left: 50px">
+    <img src="http://lorempixel.com/output/technics-q-c-640-480-4.jpg">
+    <div class="controls">
+      <p class="zoom">Zoom:</p>
+      <a data-role="zoomIn">In</a>
+      <a data-role="zoomOut">Out</a>
+      <p class="coords"></p>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="crop.js"></script>
+  <script>
+    (function () {
+      var cropDiv1 = document.getElementById('crop1'),
+          cropDiv2 = document.getElementById('crop2'),
+          crop1,
+          crop2;
+
+      crop1 = new Crop(cropDiv1, {
+        coords: [[100, 100], [400, 400]],
+        onChange: updateCoords
+      });
+      crop2 = new Crop(cropDiv2, {
+        coords: [[440, 0], [640, 200]],
+        onChange: updateCoords
+      });
+
+      cropDiv1.addEventListener('click', function (event) {
+        zoom(event, crop1);
+      });
+      cropDiv2.addEventListener('click', function (event) {
+        zoom(event, crop2);
+      });
+
+      function updateCoords(el, coords) {
+        el.querySelector('.coords').innerText = '(' + coords[0].join(',') + '), (' + coords[1].join(',') + ')';
+      }
+
+      function zoom(event, crop) {
+        var role = event.target.getAttribute('data-role');
+
+        if (role === 'zoomIn') {
+          crop.scaleImage(1.05);
+        } else if (role === 'zoomOut') {
+          crop.scaleImage(0.95);
+        }
+      }
+    })();
+  </script>
+
+</body>
+</html>
