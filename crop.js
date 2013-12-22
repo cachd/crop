@@ -81,7 +81,7 @@
       this.opts = extend({}, defaults, opts || {});
 
       // keep reference to original image element as it will be soon detached
-      this.originalImageEl = this.el.getElementsByTagName('img')[0];
+      this.originalImageEl = this.el.querySelector('img');
 
       this.imageEl = this.originalImageEl.cloneNode(false);
 
