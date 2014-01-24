@@ -336,6 +336,10 @@
     }
 
     function pointerMoveHandler(e) {
+      if (e.touches && e.touches.length > 1) {
+        return;
+      }
+      
       var pointerPosition = calculatePointerPosition.call(self, e),
           newX = initialImagePosition[0] + (-1 * (initialPointerPosition[0] - pointerPosition[0])),
           newY = initialImagePosition[1] + (-1 * (initialPointerPosition[1] - pointerPosition[1]));
