@@ -48,48 +48,40 @@
     onChange: null
   };
 
-  function Crop() {
+  function Crop(element, opts) {
+    var self = this;
 
     // handle constructor call without `new` keyword
-    if (this === undefined) {
-      return new Crop.apply(this, arguments);
+    if (!(this instanceof Crop)) {
+      return new Crop(element, opts);
     }
 
-    this.init.apply(this, arguments);
+    // is plugin already initialized?
+    if (this.el) {
+      return;
+    }
+
+    this.el = element;
+    this.opts = extend({}, defaults, opts || {});
+
+    // keep reference to original image element as it will be soon detached
+    this.originalImageEl = this.el.querySelector('img');
+
+    this.imageEl = this.originalImageEl.cloneNode(false);
+
+    this.originalImageEl.parentNode.insertBefore(this.imageEl, this.originalImageEl.nextSibling);
+    this.originalImageEl.parentNode.removeChild(this.originalImageEl);
+
+    imageLoaded.call(this, function () {
+      if (initializeImage.apply(self, self.opts.coords)) {
+        bindMoveEvents.call(self);
+      }
+    });
 
     return this;
   }
 
   extend(Crop.prototype, {
-
-    /**
-     * Initializes crop on element.
-     */
-    init: function (element, opts) {
-      var self = this;
-
-      // is plugin already initialized?
-      if (this.el) {
-        return;
-      }
-
-      this.el = element;
-      this.opts = extend({}, defaults, opts || {});
-
-      // keep reference to original image element as it will be soon detached
-      this.originalImageEl = this.el.querySelector('img');
-
-      this.imageEl = this.originalImageEl.cloneNode(false);
-
-      this.originalImageEl.parentNode.insertBefore(this.imageEl, this.originalImageEl.nextSibling);
-      this.originalImageEl.parentNode.removeChild(this.originalImageEl);
-
-      imageLoaded.call(this, function () {
-        if (initializeImage.apply(self, self.opts.coords)) {
-          bindMoveEvents.call(self);
-        }
-      });
-    },
 
     /**
      * Destroys crop instance.
