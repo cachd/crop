@@ -27,23 +27,19 @@
     return parseInt(val, 10);
   }
 
-  function extend(destionation) {
-    var sources = Array.prototype.slice.call(arguments, 1),
-        iter,
-        total;
+  function extend() {
+    var iter;
 
-    for (iter = 0, total = sources.length; iter < total; iter++) {
-      var source = sources[iter],
-          property;
+    for (iter = 1; iter < arguments.length; iter++) {
+      var key;
 
-      if (source) {
-        for (property in source) {
-          destionation[property] = source[property];
+      for (key in arguments[iter]) {
+        if (arguments[iter].hasOwnProperty(key)) {
+          arguments[0][key] = arguments[iter][key];
         }
       }
     }
-
-    return destionation;
+    return arguments[0];
   }
 
   defaults = {
