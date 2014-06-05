@@ -307,8 +307,13 @@
     widthRatio = containerSize[0] / (point2[0] - point1[0]);
     heightRatio = containerSize[1] / (point2[1] - point1[1]);
 
-    data.originalWidth = size[0];
-    data.originalHeight = size[1];
+    if (this.imageEl.dataset) {
+      data.originalWidth = size[0];
+      data.originalHeight = size[1];
+    } else {
+      this.imageEl.setAttribute('data-originalWidth', size[0]);
+      this.imageEl.setAttribute('data-originalHeight', size[1]);
+    }
 
     if (this.resizeImage(size[0] * widthRatio, size[1] * heightRatio)) {
       return !!this.positionImage(-1 * point1[0] * widthRatio, -1 * point1[1] * heightRatio);
@@ -394,20 +399,35 @@
    */
   function getContainerSize() {
     var data = this.el.dataset || getDataset(this.el),
+        width = data.width,
+        height = data.height,
         style,
         borderWidth,
-        borderHeight;
+        borderHeight,
+        computedWidth,
+        computedHeight;
 
-    if (!data.width || !data.height) {
+    if (!width || !height) {
       style = getComputedStyle(this.el, null);
       borderWidth = int(style.getPropertyValue('border-left-width')) + int(style.getPropertyValue('border-right-width'));
       borderHeight = int(style.getPropertyValue('border-top-width')) + int(style.getPropertyValue('border-bottom-width'));
 
-      data.width = this.el.offsetWidth - borderWidth;
-      data.height = this.el.offsetHeight - borderHeight;
+      computedWidth = this.el.offsetWidth - borderWidth;
+      computedHeight = this.el.offsetHeight - borderHeight;
+
+      if (this.el.dataset) {
+        data.width = computedWidth;
+        data.height = computedHeight;
+      } else {
+        this.el.setAttribute('data-width', computedWidth);
+        this.el.setAttribute('data-height', computedHeight);
+      }
+
+      width = computedWidth;
+      height = computedHeight;
     }
 
-    return [int(data.width), int(data.height)];
+    return [int(width), int(height)];
   }
 
   /**
