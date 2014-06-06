@@ -462,6 +462,10 @@
   function calculatePointerPosition(e) {
     var offset = this.el.getBoundingClientRect();
 
+    if (e.touches && e.touches.length) {
+      e = e.touches[0];
+    }
+
     return [e.pageX - offset.left, e.pageY - offset.top];
   }
 
