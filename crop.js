@@ -27,23 +27,6 @@
     return parseInt(val, 10);
   }
 
-  function getDataset(element){
-    var attributes = element.attributes,
-        dataset = {},
-        iter,
-        key,
-        value;
-
-    for (iter = attributes.length; iter--; ){
-      if (/^data-.*/.test(attributes[iter].name)) {
-        key = attributes[iter].name.replace('data-', '');
-        value = element.getAttribute(attributes[iter].name);
-        dataset[key] = value;
-      }
-    }
-    return dataset;
-  }
-
   function extend() {
     var iter;
 
@@ -66,7 +49,8 @@
   };
 
   function Crop(element, opts) {
-    var self = this;
+    var self = this,
+        originalImageEl;
 
     // handle constructor call without `new` keyword
     if (!(this instanceof Crop)) {
@@ -74,20 +58,21 @@
     }
 
     // is plugin already initialized?
-    if (this.el) {
+    if (this.container) {
       return;
     }
 
-    this.el = element;
+    this.container = new Element(element);
     this.opts = extend({}, defaults, opts || {});
 
     // keep reference to original image element as it will be soon detached
-    this.originalImageEl = this.el.querySelector('img');
+    this.originalImage = new Element(this.container[0].querySelector('img'));
+    originalImageEl = this.originalImage[0];
 
-    this.imageEl = this.originalImageEl.cloneNode(false);
+    this.image = new Element(originalImageEl.cloneNode(false));
 
-    this.originalImageEl.parentNode.insertBefore(this.imageEl, this.originalImageEl.nextSibling);
-    this.originalImageEl.parentNode.removeChild(this.originalImageEl);
+    originalImageEl.parentNode.insertBefore(this.image[0], originalImageEl.nextSibling);
+    originalImageEl.parentNode.removeChild(originalImageEl);
 
     imageLoaded.call(this, function () {
       if (initializeImage.apply(self, self.opts.coords)) {
@@ -104,20 +89,17 @@
      * Destroys crop instance.
      */
     destroy: function () {
-      var data = this.el.dataset || getDataset(this.el);
-
-      delete data.width;
-      delete data.height;
-
+      var imageEl = this.image[0];
+      
       unbindMoveEvents.call(this);
 
       // restore original, unmodified image
-      this.imageEl.parentNode.insertBefore(this.originalImageEl, this.imageEl.nextSibling);
-      this.imageEl.parentNode.removeChild(this.imageEl);
-      delete this.originalImageEl;
-      delete this.imageEl;
+      imageEl.parentNode.insertBefore(this.originalImage[0], imageEl.nextSibling);
+      imageEl.parentNode.removeChild(imageEl);
+      delete this.originalImage;
+      delete this.image;
 
-      delete this.el;
+      delete this.container;
       delete this.opts;
     },
 
@@ -130,7 +112,7 @@
       var containerSize = getContainerSize.call(this),
           size = getImageSize.call(this),
           position = getImagePosition.call(this),
-          data = this.imageEl.dataset || getDataset(this.imageEl),
+          data = this.image.dataset,
           widthRatio, heightRatio,
           point1, point2;
 
@@ -159,7 +141,7 @@
     positionImage: function (x, y) {
       var containerSize = getContainerSize.call(this),
           size = getImageSize.call(this),
-          data = this.imageEl.dataset || getDataset(this.imageEl),
+          data = this.image.dataset,
           position = {
             left: 'auto',
             right: 'auto',
@@ -185,22 +167,17 @@
         y = -1 * (size[1] - containerSize[1]);
       }
 
-      style = this.imageEl.style;
+      style = this.image[0].style;
       style.left = position.left;
       style.right = position.right;
       style.top = position.top;
       style.bottom = position.bottom;
 
-      if (this.imageEl.dataset) {
-        data.x = x;
-        data.y = y;
-      } else {
-        this.imageEl.setAttribute('data-x', x);
-        this.imageEl.setAttribute('data-y', y);
-      }
+      data.x = x;
+      data.y = y;
 
       if (typeof this.opts.onChange === 'function') {
-        this.opts.onChange(this.el, this.getCoords());
+        this.opts.onChange(this.container[0], this.getCoords());
       }
 
       return [x, y];
@@ -215,13 +192,18 @@
      */
     resizeImage: function (width, height) {
       var containerSize = getContainerSize.call(this),
-          data = this.imageEl.dataset || getDataset(this.imageEl),
+          el = this.image[0],
+          data = this.image.dataset,
           aspectRatio = data.originalWidth / data.originalHeight,
           newWidth = containerSize[0],
-          newHeight = containerSize[1];
+          newHeight = containerSize[1],
+          shouldReposition = true;
 
       if (!this.opts.upscale && (width > data.originalWidth || height > data.originalHeight)) {
-        return false;
+        width = data.originalWidth;
+        height = data.originalHeight;
+
+        shouldReposition = false;
       }
 
       if (width >= containerSize[0] && height >= containerSize[1]) {
@@ -236,10 +218,10 @@
       newWidth = Math.round(newWidth);
       newHeight = Math.round(newHeight);
 
-      this.imageEl.width = newWidth;
-      this.imageEl.height = newHeight;
+      el.width = newWidth;
+      el.height = newHeight;
 
-      return [newWidth, newHeight];
+      return shouldReposition ? [newWidth, newHeight] : false;
     },
 
     /**
@@ -270,6 +252,17 @@
   });
 
   /**
+   * Custom element with dataset support.
+   *
+   * @param {HTMLElement} element
+   * @constructor
+   */
+  function Element(element) {
+    this[0] = element;
+    this.dataset = {};
+  }
+
+  /**
    * Determines whether image has loaded.
    *
    * @memberof Crop
@@ -277,10 +270,12 @@
    * @private
    */
   function imageLoaded(callback) {
-    if (this.imageEl.complete || this.imageEl.readyState === 4) {
+    var imageEl = this.image[0];
+
+    if (imageEl.complete || imageEl.readyState === 4) {
       callback();
     } else {
-      this.imageEl.addEventListener('load', callback)
+      imageEl.addEventListener('load', callback)
     }
   }
 
@@ -296,7 +291,7 @@
   function initializeImage(point1, point2) {
     var containerSize = getContainerSize.call(this),
         size = getImageSize.call(this),
-        data = this.imageEl.dataset || getDataset(this.imageEl),
+        data = this.image.dataset,
         widthRatio, heightRatio;
 
     if (!point1) {
@@ -307,13 +302,8 @@
     widthRatio = containerSize[0] / (point2[0] - point1[0]);
     heightRatio = containerSize[1] / (point2[1] - point1[1]);
 
-    if (this.imageEl.dataset) {
-      data.originalWidth = size[0];
-      data.originalHeight = size[1];
-    } else {
-      this.imageEl.setAttribute('data-originalWidth', size[0]);
-      this.imageEl.setAttribute('data-originalHeight', size[1]);
-    }
+    data.originalWidth = size[0];
+    data.originalHeight = size[1];
 
     if (this.resizeImage(size[0] * widthRatio, size[1] * heightRatio)) {
       return !!this.positionImage(-1 * point1[0] * widthRatio, -1 * point1[1] * heightRatio);
@@ -368,7 +358,7 @@
       document.removeEventListener(touchSupported ? 'touchmove' : 'mousemove', pointerMoveHandler);
     }
 
-    bindEvent.call(this, this.el, touchSupported ? 'touchstart' : 'mousedown', pointerDownHandler);
+    bindEvent.call(this, this.container[0], touchSupported ? 'touchstart' : 'mousedown', pointerDownHandler);
     bindEvent.call(this, document, touchSupported ? 'touchend' : 'mouseup', pointerUpHandler);
   }
 
@@ -398,7 +388,8 @@
    * @returns {Array} Size as [width, height]
    */
   function getContainerSize() {
-    var data = this.el.dataset || getDataset(this.el),
+    var el = this.container[0],
+        data = this.container.dataset,
         width = data.width,
         height = data.height,
         style,
@@ -408,20 +399,15 @@
         computedHeight;
 
     if (!width || !height) {
-      style = getComputedStyle(this.el, null);
+      style = getComputedStyle(el, null);
       borderWidth = int(style.getPropertyValue('border-left-width')) + int(style.getPropertyValue('border-right-width'));
       borderHeight = int(style.getPropertyValue('border-top-width')) + int(style.getPropertyValue('border-bottom-width'));
 
-      computedWidth = this.el.offsetWidth - borderWidth;
-      computedHeight = this.el.offsetHeight - borderHeight;
+      computedWidth = el.offsetWidth - borderWidth;
+      computedHeight = el.offsetHeight - borderHeight;
 
-      if (this.el.dataset) {
-        data.width = computedWidth;
-        data.height = computedHeight;
-      } else {
-        this.el.setAttribute('data-width', computedWidth);
-        this.el.setAttribute('data-height', computedHeight);
-      }
+      data.width = computedWidth;
+      data.height = computedHeight;
 
       width = computedWidth;
       height = computedHeight;
@@ -437,7 +423,9 @@
    * @returns {Array} Size as [width, height].
    */
   function getImageSize() {
-    return [this.imageEl.clientWidth, this.imageEl.clientHeight];
+    var imageEl = this.image[0];
+
+    return [imageEl.clientWidth, imageEl.clientHeight];
   }
 
   /**
@@ -447,9 +435,9 @@
    * @returns {Array} Position as [x, y].
    */
   function getImagePosition() {
-    var data = this.imageEl.dataset || getDataset(this.imageEl);
+    var data = this.image.dataset;
 
-    return [int(data.x), int(data.y)];
+    return [data.x, data.y];
   }
 
   /**
@@ -460,7 +448,7 @@
    * @returns {Array} Position as [x, y].
    */
   function calculatePointerPosition(e) {
-    var offset = this.el.getBoundingClientRect();
+    var offset = this.container[0].getBoundingClientRect();
 
     if (e.touches && e.touches.length) {
       e = e.touches[0];
