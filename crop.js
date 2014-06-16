@@ -2,7 +2,7 @@
  * A standalone JavaScript plugin for cross-browser (including mobile) crop.
  *
  * @name Crop
- * @version 0.1.5
+ * @version 0.1.6
  * @author Aleksandras Nelkinas
  * @license [MIT]{@link http://opensource.org/licenses/mit-license.php}
  *
