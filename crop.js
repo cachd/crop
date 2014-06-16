@@ -75,9 +75,8 @@
     originalImageEl.parentNode.removeChild(originalImageEl);
 
     imageLoaded.call(this, function () {
-      if (initializeImage.apply(self, self.opts.coords)) {
-        bindMoveEvents.call(self);
-      }
+      initializeImage.apply(self, self.opts.coords);
+      bindMoveEvents.call(self);
     });
 
     return this;
@@ -202,8 +201,6 @@
       if (!this.opts.upscale && (width > data.originalWidth || height > data.originalHeight)) {
         width = data.originalWidth;
         height = data.originalHeight;
-
-        shouldReposition = false;
       }
 
       if (width >= containerSize[0] && height >= containerSize[1]) {
@@ -217,6 +214,10 @@
 
       newWidth = Math.round(newWidth);
       newHeight = Math.round(newHeight);
+
+      if (newWidth === el.width && newHeight === el.height) {
+        shouldReposition = false;
+      }
 
       el.width = newWidth;
       el.height = newHeight;
@@ -236,13 +237,15 @@
           position = getImagePosition.call(this),
           width = size[0] * ratio,
           height = size[1] * ratio,
+          newSize,
+          actualRatio,
           x, y;
 
-      ratio -= 1;
+      if (newSize = this.resizeImage(width, height)) {
+        actualRatio = newSize[0] / size[0] - 1;
 
-      if (this.resizeImage(width, height)) {
-        x = position[0] - (Math.abs(position[0]) + containerSize[0] / 2) * ratio;
-        y = position[1] - (Math.abs(position[1]) + containerSize[1] / 2) * ratio;
+        x = position[0] - (Math.abs(position[0]) + containerSize[0] / 2) * actualRatio;
+        y = position[1] - (Math.abs(position[1]) + containerSize[1] / 2) * actualRatio;
 
         return this.positionImage(x, y);
       }
@@ -305,11 +308,8 @@
     data.originalWidth = size[0];
     data.originalHeight = size[1];
 
-    if (this.resizeImage(size[0] * widthRatio, size[1] * heightRatio)) {
-      return !!this.positionImage(-1 * point1[0] * widthRatio, -1 * point1[1] * heightRatio);
-    }
-
-    return false;
+    this.resizeImage(size[0] * widthRatio, size[1] * heightRatio);
+    this.positionImage(-1 * point1[0] * widthRatio, -1 * point1[1] * heightRatio);
   }
 
   /**
