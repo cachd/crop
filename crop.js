@@ -196,11 +196,27 @@
           aspectRatio = data.originalWidth / data.originalHeight,
           newWidth = containerSize[0],
           newHeight = containerSize[1],
-          shouldReposition = true;
+          minSize = this.opts.minSize,
+          shouldReposition = true,
+          maxRatio,
+          containerRatio;
 
+      // do not allow to upscale image by default
       if (!this.opts.upscale && (width > data.originalWidth || height > data.originalHeight)) {
         width = data.originalWidth;
         height = data.originalHeight;
+      }
+
+      // do not exceed min. crop size if such is provided
+      if (minSize) {
+        maxRatio = [data.originalWidth / minSize[0], data.originalHeight / minSize[1]];
+
+        if (width / containerSize[0] > maxRatio[0] || height / containerSize[1] > maxRatio[1]) {
+          containerRatio = [minSize[0] / containerSize[0], minSize[1] / containerSize[1]];
+
+          width = data.originalWidth / containerRatio[0];
+          height = data.originalHeight / containerRatio[1];
+        }
       }
 
       if (width >= containerSize[0] && height >= containerSize[1]) {

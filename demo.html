@@ -96,7 +96,8 @@
           crop2;
 
       crop1 = new Crop(cropDiv1, {
-        coords: [[100, 100], [400, 400]],
+        minSize: [300, 300],
+        coords: [[50, 50], [450, 450]],
         onChange: updateCoords
       });
       crop2 = new Crop(cropDiv2, {
