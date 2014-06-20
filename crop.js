@@ -226,6 +226,9 @@
         newWidth = newHeight * aspectRatio;
       } else if (height >= containerSize[1]) {
         newHeight = newWidth / aspectRatio;
+      } else {
+        newWidth = el.width;
+        newHeight = el.height;
       }
 
       newWidth = Math.round(newWidth);
