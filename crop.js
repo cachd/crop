@@ -75,7 +75,12 @@
     originalImageEl.parentNode.removeChild(originalImageEl);
 
     imageLoaded.call(this, function () {
-      initializeImage.apply(self, self.opts.coords);
+      var coords = self.opts.coords;
+
+      if (coords && self.opts.translateCoordsTo) {
+        coords = translateCoords(coords, self.opts.translateCoordsTo, getImageSize.call(self));
+      }
+      initializeImage.apply(self, coords);
       bindMoveEvents.call(self);
     });
 
@@ -127,6 +132,9 @@
         Math.round(point1[1] + containerSize[1] * heightRatio)
       ];
 
+      if (this.opts.translateCoordsTo) {
+        return translateCoords([point1, point2], [data.originalWidth, data.originalHeight], this.opts.translateCoordsTo);
+      }
       return [point1, point2];
     },
 
@@ -474,6 +482,23 @@
     }
 
     return [e.pageX - offset.left, e.pageY - offset.top];
+  }
+
+  /**
+   * Translates crop coordinates to another scale.
+   *
+   * @param {Array} coords Coordinates as [[x, y], [x2, y2]].
+   * @param {Array} from Current size as [width, height].
+   * @param {Array} to Target size as [width, height].
+   * @returns {Array} Translated coordinates as [[x, y], [x2, y2]].
+   */
+  function translateCoords(coords, from, to) {
+    var widthRatio = to[0] / from[0],
+        heightRatio = to[1] / from[1];
+
+    return coords.map(function (coord) {
+      return [coord[0] * widthRatio, coord[1] * heightRatio].map(Math.round);
+    });
   }
 
   return Crop;
