@@ -6,7 +6,7 @@
  * @author Aleksandras Nelkinas
  * @license [MIT]{@link http://opensource.org/licenses/mit-license.php}
  *
- * Copyright (c) 2013 Aleksandras Nelkinas
+ * Copyright (c) 2013-2014 Aleksandras Nelkinas
  */
 
 ;(function (root, factory) {
@@ -110,7 +110,7 @@
     /**
      * Returns currently set crop coordinates.
      *
-     * @returns {Array} Coordinates as [[x, y], [x2, y2]].
+     * @returns {Array}  Coordinates as [[x, y], [x2, y2]].
      */
     getCoords: function () {
       var containerSize = getContainerSize.call(this),
@@ -143,7 +143,7 @@
      *
      * @param {Number} x
      * @param {Number} y
-     * @returns {Array} New position as [x, y].
+     * @returns {Array}  New position as [x, y].
      */
     positionImage: function (x, y) {
       var containerSize = getContainerSize.call(this),
@@ -195,7 +195,7 @@
      *
      * @param {Number} width
      * @param {Number} height
-     * @returns {Array} New size as [width, height].
+     * @returns {Array}  New size as [width, height].
      */
     resizeImage: function (width, height) {
       var containerSize = getContainerSize.call(this),
@@ -256,7 +256,7 @@
      * Scales image.
      *
      * @param {Number} ratio
-     * @returns {Array|Boolean} New position as [x, y]
+     * @returns {Array|Boolean}  New position as [x, y].
      */
     scaleImage: function (ratio) {
       var containerSize = getContainerSize.call(this),
@@ -296,7 +296,7 @@
    * Determines whether image has loaded.
    *
    * @memberof Crop
-   * @param {Function} callback Called when state has been determined.
+   * @param {Function} callback  Called when state has been determined.
    * @private
    */
   function imageLoaded(callback) {
@@ -313,9 +313,8 @@
    * Initializes image by resizing and then positioning it.
    *
    * @memberof Crop
-   * @param {Array|null} [point1] Position as [x, y].
-   * @param {Array} [point2] Position as [x, y].
-   * @returns {Boolean} Was initialization successful or not.
+   * @param {Array} [point1]  Position as [x, y].
+   * @param {Array} [point2]  Position as [x, y].
    * @private
    */
   function initializeImage(point1, point2) {
@@ -412,7 +411,7 @@
    * Initially caches container's size and always returns cached value.
    *
    * @memberof Crop
-   * @returns {Array} Size as [width, height]
+   * @returns {Array}  Size as [width, height].
    */
   function getContainerSize() {
     var el = this.container[0],
@@ -447,7 +446,7 @@
    * Returns image's size.
    *
    * @memberof Crop
-   * @returns {Array} Size as [width, height].
+   * @returns {Array}  Size as [width, height].
    */
   function getImageSize() {
     var imageEl = this.image[0];
@@ -459,7 +458,7 @@
    * Returns image's position.
    *
    * @memberof Crop
-   * @returns {Array} Position as [x, y].
+   * @returns {Array}  Position as [x, y].
    */
   function getImagePosition() {
     var data = this.image.dataset;
@@ -472,7 +471,7 @@
    *
    * @memberof Crop
    * @param {Event} e
-   * @returns {Array} Position as [x, y].
+   * @returns {Array}  Position as [x, y].
    */
   function calculatePointerPosition(e) {
     var offset = this.container[0].getBoundingClientRect();
@@ -487,10 +486,10 @@
   /**
    * Translates crop coordinates to another scale.
    *
-   * @param {Array} coords Coordinates as [[x, y], [x2, y2]].
-   * @param {Array} from Current size as [width, height].
-   * @param {Array} to Target size as [width, height].
-   * @returns {Array} Translated coordinates as [[x, y], [x2, y2]].
+   * @param {Array} coords  Coordinates as [[x, y], [x2, y2]].
+   * @param {Array} from    Current size as [width, height].
+   * @param {Array} to      Target size as [width, height].
+   * @returns {Array}       Translated coordinates as [[x, y], [x2, y2]].
    */
   function translateCoords(coords, from, to) {
     var widthRatio = to[0] / from[0],
