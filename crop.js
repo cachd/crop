@@ -75,11 +75,23 @@
     originalImageEl.parentNode.removeChild(originalImageEl);
 
     imageLoaded.call(this, function () {
-      var coords = self.opts.coords;
+      var coords = self.opts.coords,
+          transform = self.opts.transform;
 
-      if (coords && self.opts.translateCoordsTo) {
-        coords = translateCoords(coords, self.opts.translateCoordsTo, getImageSize.call(self));
+      if (transform) {
+        coords = moveCoords(coords.map(function (coords) {
+          var size = getImageSize.call(self),
+              realSize = unifyDimensions(transform.realSize, size);
+
+          if (transform.rotation) {
+            coords = rotateCoords(coords, realSize, transform.rotation);
+          }
+          coords = scaleCoords(coords, realSize, size);
+
+          return coords;
+        }));
       }
+
       initializeImage.apply(self, coords);
       bindMoveEvents.call(self);
     });
@@ -94,7 +106,7 @@
      */
     destroy: function () {
       var imageEl = this.image[0];
-      
+
       unbindMoveEvents.call(this);
 
       // restore original, unmodified image
@@ -115,13 +127,15 @@
     getCoords: function () {
       var containerSize = getContainerSize.call(this),
           size = getImageSize.call(this),
+          originalSize = getOriginalSize.call(this),
           position = getImagePosition.call(this),
-          data = this.image.dataset,
+          transform = this.opts.transform,
           widthRatio, heightRatio,
-          point1, point2;
+          point1, point2,
+          coords;
 
-      widthRatio = data.originalWidth / size[0];
-      heightRatio = data.originalHeight / size[1];
+      widthRatio = originalSize[0] / size[0];
+      heightRatio = originalSize[1] / size[1];
 
       point1 = [
         Math.round(-1 * position[0] * widthRatio),
@@ -132,10 +146,20 @@
         Math.round(point1[1] + containerSize[1] * heightRatio)
       ];
 
-      if (this.opts.translateCoordsTo) {
-        return translateCoords([point1, point2], [data.originalWidth, data.originalHeight], this.opts.translateCoordsTo);
+      coords = [point1, point2];
+
+      if (transform) {
+        coords = moveCoords(coords.map(function (coords) {
+          coords = scaleCoords(coords, unifyDimensions(originalSize, transform.realSize), transform.realSize);
+
+          if (transform.rotation) {
+            coords = rotateCoords(coords, transform.realSize, -1 * transform.rotation);
+          }
+          return coords;
+        }));
       }
-      return [point1, point2];
+
+      return coords;
     },
 
     /**
@@ -200,8 +224,8 @@
     resizeImage: function (width, height) {
       var containerSize = getContainerSize.call(this),
           el = this.image[0],
-          data = this.image.dataset,
-          aspectRatio = data.originalWidth / data.originalHeight,
+          originalSize = getOriginalSize.call(this),
+          aspectRatio = originalSize[0] / originalSize[1],
           newWidth = containerSize[0],
           newHeight = containerSize[1],
           minSize = this.opts.minSize,
@@ -210,20 +234,20 @@
           containerRatio;
 
       // do not allow to upscale image by default
-      if (!this.opts.upscale && (width > data.originalWidth || height > data.originalHeight)) {
-        width = data.originalWidth;
-        height = data.originalHeight;
+      if (!this.opts.upscale && (width > originalSize[0] || height > originalSize[1])) {
+        width = originalSize[0];
+        height = originalSize[1];
       }
 
       // do not exceed min. crop size if such is provided
       if (minSize) {
-        maxRatio = [data.originalWidth / minSize[0], data.originalHeight / minSize[1]];
+        maxRatio = [originalSize[0] / minSize[0], originalSize[1] / minSize[1]];
 
         if (width / containerSize[0] > maxRatio[0] || height / containerSize[1] > maxRatio[1]) {
           containerRatio = [minSize[0] / containerSize[0], minSize[1] / containerSize[1]];
 
-          width = data.originalWidth / containerRatio[0];
-          height = data.originalHeight / containerRatio[1];
+          width = originalSize[0] / containerRatio[0];
+          height = originalSize[1] / containerRatio[1];
         }
       }
 
@@ -370,7 +394,7 @@
       if (e.touches && e.touches.length > 1) {
         return;
       }
-      
+
       var pointerPosition = calculatePointerPosition.call(self, e),
           newX = initialImagePosition[0] + (-1 * (initialPointerPosition[0] - pointerPosition[0])),
           newY = initialImagePosition[1] + (-1 * (initialPointerPosition[1] - pointerPosition[1]));
@@ -443,6 +467,17 @@
   }
 
   /**
+   * Returns original (non-scaled) image size.
+   *
+   * @returns {Array}  Size as [width, height].
+   */
+  function getOriginalSize() {
+    var data = this.image.dataset;
+
+    return [data.originalWidth, data.originalHeight];
+  }
+
+  /**
    * Returns image's size.
    *
    * @memberof Crop
@@ -484,20 +519,106 @@
   }
 
   /**
-   * Translates crop coordinates to another scale.
+   * Scales coordinates.
    *
-   * @param {Array} coords  Coordinates as [[x, y], [x2, y2]].
-   * @param {Array} from    Current size as [width, height].
-   * @param {Array} to      Target size as [width, height].
-   * @returns {Array}       Translated coordinates as [[x, y], [x2, y2]].
+   * @param {Array}  coords    Coordinates to scale as [x, y].
+   * @param {Array}  from      Current container size as [width, height].
+   * @param {Array}  to        Target container size as [width, height].
+   * @returns {Array}          Scaled coordinates as [x, y].
    */
-  function translateCoords(coords, from, to) {
+  function scaleCoords(coords, from, to) {
     var widthRatio = to[0] / from[0],
         heightRatio = to[1] / from[1];
 
-    return coords.map(function (coord) {
-      return [coord[0] * widthRatio, coord[1] * heightRatio].map(Math.round);
-    });
+    return [coords[0] * widthRatio, coords[1] * heightRatio].map(Math.round);
+  }
+
+  /**
+   * Rotates coordinates.
+   *
+   * @param {Array}  coords  Coordinates to rotate [x, y].
+   * @param {Array}  size    Rotated container size as [width, height].
+   * @param {Number} deg     Rotation degrees.
+   * @returns {Array}        Rotated coordinates [x, y].
+   */
+  function rotateCoords(coords, size, deg) {
+    var x = coords[0],
+        y = coords[1],
+        newX = x,
+        newY = y,
+        rad,
+        sin,
+        cos;
+
+    deg %= 360;
+
+    if (deg < 0) {
+      deg += 360;
+    }
+    if (deg > 0) {
+      rad = deg * Math.PI / 180;
+      sin = Math.sin(rad);
+      cos = Math.cos(rad);
+
+      newX = x * cos - y * sin;
+      newY = x * sin + y * cos;
+
+      switch (deg) {
+        case 90:
+          newX += size[0];
+          break;
+        case 180:
+          newX += size[0];
+          newY += size[1];
+          break;
+        case 270:
+          newY += size[1];
+          break;
+      }
+    }
+    return [newX, newY].map(Math.round);
+  }
+
+  /**
+   * Makes sure that first point is at top left and second is at bottom right position.
+   *
+   * @param {Array} points  Two coordinate points to moves as [[x1, y1], [x2, y2]].
+   * @returns {Array}       Moved coordinate points as [[x1, y1], [x2, y2]].
+   */
+  function moveCoords(points) {
+    var x,
+        y;
+
+    if (points[0][0] > points[1][0]) {
+      x = points[1][0];
+      points[1][0] = points[0][0];
+      points[0][0] = x;
+    }
+    if (points[0][1] > points[1][1]) {
+      y = points[1][1];
+      points[1][1] = points[0][1];
+      points[0][1] = y;
+    }
+
+    return points;
+  }
+
+  /**
+   * Unifies target dimensions' aspect ratio with source's.
+   *
+   * @param {Array} target  Target's dimensions to unify as [width, height].
+   * @param {Array} source  Sources's dimensions to unify with [width, height].
+   * @returns {Array}       Target's unified dimensions as [width, height].
+   */
+  function unifyDimensions(target, source) {
+    var targetRatio = target[0] / target[1],
+        sourceRatio = source[0] / source[1];
+
+    if (targetRatio > 1 && sourceRatio > 1 || targetRatio < 1 && sourceRatio < 1) {
+      return target;
+    } else {
+      return [target[1], target[0]];
+    }
   }
 
   return Crop;
