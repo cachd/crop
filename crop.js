@@ -75,13 +75,13 @@
     originalImageEl.parentNode.removeChild(originalImageEl);
 
     imageLoaded.call(this, function () {
-      var coords = self.opts.coords,
-          transform = self.opts.transform;
+      var size = getImageSize.call(self),
+          transform = self.opts.transform,
+          coords = self.opts.coords || getCenteredSquareCoords(transform ? transform.realSize : size);
 
       if (transform) {
         coords = moveCoords(coords.map(function (coords) {
-          var size = getImageSize.call(self),
-              realSize = unifyDimensions(transform.realSize, size);
+          var realSize = unifyDimensions(transform.realSize, size);
 
           if (transform.rotation) {
             coords = rotateCoords(coords, realSize, transform.rotation);
@@ -217,11 +217,12 @@
     /**
      * Resizes image.
      *
-     * @param {Number} width
-     * @param {Number} height
+     * @param {Number}  width
+     * @param {Number}  height
+     * @param {Boolean} [isZooming=false]
      * @returns {Array}  New size as [width, height].
      */
-    resizeImage: function (width, height) {
+    resizeImage: function (width, height, isZooming) {
       var containerSize = getContainerSize.call(this),
           el = this.image[0],
           originalSize = getOriginalSize.call(this),
@@ -240,7 +241,7 @@
       }
 
       // do not exceed min. crop size if such is provided
-      if (minSize) {
+      if (isZooming && minSize) {
         maxRatio = [originalSize[0] / minSize[0], originalSize[1] / minSize[1]];
 
         if (width / containerSize[0] > maxRatio[0] || height / containerSize[1] > maxRatio[1]) {
@@ -292,7 +293,7 @@
           actualRatio,
           x, y;
 
-      if (newSize = this.resizeImage(width, height)) {
+      if (newSize = this.resizeImage(width, height, true)) {
         actualRatio = newSize[0] / size[0] - 1;
 
         x = position[0] - (Math.abs(position[0]) + containerSize[0] / 2) * actualRatio;
@@ -346,11 +347,6 @@
         size = getImageSize.call(this),
         data = this.image.dataset,
         widthRatio, heightRatio;
-
-    if (!point1) {
-      point1 = [0, 0];
-      point2 = (size[0] >= size[1]) ? [size[1], size[1]] : [size[0], size[0]];
-    }
 
     widthRatio = containerSize[0] / (point2[0] - point1[0]);
     heightRatio = containerSize[1] / (point2[1] - point1[1]);
@@ -619,6 +615,32 @@
     } else {
       return [target[1], target[0]];
     }
+  }
+
+  /**
+   * Returns centered square's coords within container of provided size.
+   *
+   * @param {Array} size  Container's size as [width, height]
+   * @returns {Array}     Coordinate points as [[x1, y1], [x2, y2]].
+   */
+  function getCenteredSquareCoords(size) {
+    var centerCoords;
+
+    if (size[0] > size[1]) {
+      centerCoords = [
+        [(size[0] - size[1]) / 2, 0].map(Math.round),
+        [(size[0] + size[1]) / 2, size[1]].map(Math.round)
+      ];
+    } else if (size[1] > size[0]) {
+      centerCoords = [
+        [0, (size[1] - size[0]) / 2].map(Math.round),
+        [size[0], (size[1] + size[0]) / 2].map(Math.round)
+      ];
+    } else {
+      centerCoords = [[0, 0], size];
+    }
+
+    return centerCoords;
   }
 
   return Crop;
