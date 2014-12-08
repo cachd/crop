@@ -260,8 +260,14 @@
       } else if (height >= containerSize[1]) {
         newHeight = newWidth / aspectRatio;
       } else {
-        newWidth = el.width;
-        newHeight = el.height;
+        newWidth = containerSize[0];
+        newHeight = containerSize[1];
+
+        if (width > height) {
+          newWidth = containerSize[1] * aspectRatio;
+        } else if (height > width) {
+          newHeight = containerSize[0] / aspectRatio;
+        }
       }
 
       newWidth = Math.round(newWidth);
