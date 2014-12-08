@@ -1,6 +1,6 @@
 {
   "name": "crop",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "A standalone JavaScript plugin for cross-browser (including mobile) crop.",
   "main": "crop.js",
   "ignore": [
