@@ -333,7 +333,7 @@
   function imageLoaded(callback) {
     var imageEl = this.image[0];
 
-    if (imageEl.complete || imageEl.readyState === 4) {
+    if ((imageEl.complete && imageEl.getAttribute('src')) || imageEl.readyState === 4) {
       callback();
     } else {
       imageEl.addEventListener('load', callback)
